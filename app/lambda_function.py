@@ -42,7 +42,7 @@ def lambda_handler(event, context):
     path = event.get("rawPath", "")
 
     if method == "GET" and path == "/health":
-        return response(200, {"status": "healthy"})
+        return response(200, {"status": "healthy", "version": "v2"})
 
     # POST /orders
     if method == "POST" and path == "/orders":

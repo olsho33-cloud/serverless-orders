@@ -1,0 +1,50 @@
+name: Deploy Lambda
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "app/**"
+      - ".github/workflows/deploy-lambda.yml"
+
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # GitHub 저장소 코드 가져오기
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # GitHub OIDC로 AWS IAM 역할 인증
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::654740195508:role/serverless-orders-dev-github-actions-role
+          aws-region: ap-northeast-2
+
+      # Lambda 배포 패키지 생성
+      - name: Package Lambda
+        run: |
+          cd app
+          zip -j ../lambda.zip lambda_function.py
+
+      # Lambda 함수 코드 업데이트
+      - name: Deploy Lambda Code
+        run: |
+          aws lambda update-function-code \
+            --function-name serverless-orders-dev-api \
+            --zip-file fileb://lambda.zip
+
+      # 배포 완료까지 대기
+      - name: Wait for Deployment
+        run: |
+          aws lambda wait function-updated \
+            --function-name serverless-orders-dev-api
